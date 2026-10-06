@@ -32,6 +32,17 @@ MIN_SPEND = 20      # 이 이상 쓴 소재만 '제대로 집행'으로 보고 �
 TAG_SPEND = 5       # 이 이상 쓴 소재는 태그 대상
 PRODUCTS = {"EFC": "Facial Comb", "PSS": "Pink Shampoo"}
 
+# 행사 탭: 캠페인 이름에 PBDD가 들어간 광고만 '행사 소재'
+EVENT = {
+    "key": "pbdd", "name": "PBDD", "title": "Prime Big Deal Days",
+    "campaign": re.compile(r"PBDD", re.I),
+    "from": "2026-10-03", "to": "2026-10-07",
+    "phases": [
+        {"key": "pre", "label": "사전", "sub": "잠재고객 모으기", "from": "2026-10-03", "to": "2026-10-05"},
+        {"key": "main", "label": "본행사", "sub": "실제 할인 기간", "from": "2026-10-06", "to": "2026-10-07"},
+    ],
+}
+
 TAG_COLS = ["광고 이름", "제품", "포맷", "이미지 문구", "문구 각도", "모델·견종", "비포애프터", "권위 배지", "가격·할인", "CTA", "메모", "분석일"]
 REPORT_COLS = ["주 시작", "한 줄 요약", "잘된 공통점", "안된 공통점", "다음 주 제작 가이드", "랜딩 제안", "작성", "상태"]
 
@@ -129,6 +140,8 @@ def ads_from(board, master, meta, amazon, tags):
             continue
         a = ad(r[4].strip())
         a["campaign"] = a["campaign"] or r[1]
+        if EVENT["campaign"].search(r[1]):
+            a["event_campaign"] = r[1]
         v = a["daily"][d]
         for i, c in enumerate((5, 6, 8, 9, 10)):  # 지출 노출 클릭 LPV 리드
             v[i] += num(r[c] if len(r) > c else None) or 0
@@ -213,7 +226,83 @@ def split_lines(s):
     return [x.strip(" -•\t") for x in (s or "").splitlines() if x.strip(" -•\t")]
 
 
-def build(ads, reports, meta_to, amz_to):
+def parse_reports(reports):
+    """주간리포트 탭 → {키: 행}. 키는 주 시작 날짜, 또는 행사 이름(예: PBDD)."""
+    head = reports[0] if reports else REPORT_COLS
+    out = {}
+    for r in reports[1:]:
+        if r and r[0].strip():
+            out[day(r[0]) or r[0].strip()] = {h: (r[i] if i < len(r) else "") for i, h in enumerate(head)}
+    return out
+
+
+def report_of(r):
+    return {
+        "summary": r.get("한 줄 요약", ""), "good": split_lines(r.get("잘된 공통점")),
+        "bad": split_lines(r.get("안된 공통점")), "guide": split_lines(r.get("다음 주 제작 가이드")),
+        "landing": split_lines(r.get("랜딩 제안")), "author": r.get("작성", ""), "status": r.get("상태", ""),
+    }
+
+
+def build_event(ads, reports, meta_to, amz_to):
+    """행사 탭 데이터: 단계별(사전/본행사) 행사 소재 성과 + 같은 기간 상시 소재와 비교."""
+    E = EVENT
+    ev = [a for a in ads.values() if a.get("event_campaign")]
+    base = [a for a in ads.values() if not a.get("event_campaign")]
+
+    def total(group, d0, d1, amz_ok):
+        t = [0.0] * 10
+        for a in group:
+            for i, x in enumerate(sums(a["daily"], d0, d1, 5) + sums(a["amz"], d0, d1, 5)):
+                t[i] += x
+        return kpi(*t, amz_ok)
+
+    def ctype(c):
+        return "메인행사" if "메인" in c else "장바구니" if "장바구니" in c else "잠재고객" if "잠재" in c else "트래픽"
+
+    phases = []
+    for p in E["phases"]:
+        s, e = p["from"], p["to"]
+        started = meta_to >= s
+        amz_cov = "full" if amz_to >= e else ("partial" if amz_to >= s else "none")
+        amz_ok = amz_cov != "none"
+        items = []
+        for a in ev:
+            m = sums(a["daily"], s, e, 5)
+            z = sums(a["amz"], s, e, 5)
+            if m[0] < 1:
+                continue
+            k = kpi(*m, *z, amz_ok)
+            c = card(a, k, amz_ok)
+            c["ctype"] = ctype(a["event_campaign"])
+            items.append(c)
+        if p["key"] == "pre":  # 사전: 리드 모으기가 목표 → 리드 많은 순
+            items.sort(key=lambda c: (-c["week"]["leads"], c["week"]["cpl"] or 99))
+        else:
+            items.sort(key=lambda c: (-c["week"]["sales"], -c["week"]["atc"], -c["week"]["clicks"]))
+        phases.append({
+            **p, "started": started, "dataTo": min(meta_to, e) if started else "", "amzCoverage": amz_cov,
+            "event": total(ev, s, e, amz_ok), "base": total(base, s, e, amz_ok),
+            "creatives": items[:8], "more": max(0, len(items) - 8), "count": len(items),
+        })
+
+    days = []
+    d = dt.date.fromisoformat(E["from"])
+    while d.isoformat() <= E["to"]:
+        x = d.isoformat()
+        days.append({"date": x, "hasMeta": x <= meta_to, "hasAmz": x <= amz_to,
+                     "event": total(ev, x, x, x <= amz_to), "base": total(base, x, x, x <= amz_to)})
+        d += dt.timedelta(days=1)
+
+    out = {"key": E["key"], "name": E["name"], "title": E["title"], "from": E["from"], "to": E["to"],
+           "metaTo": meta_to, "amzTo": amz_to, "phases": phases, "days": days,
+           "report": report_of(parse_reports(reports).get(E["name"], {}))}
+    (DATA / f"{E['key']}.json").write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"{E['name']}: 행사 소재 {len(ev)}개 · " + " / ".join(f"{p['label']} {p['count']}개 ${p['event']['spend']:,.0f}" for p in phases))
+    return {"key": E["key"], "name": E["name"], "from": E["from"], "to": E["to"]}
+
+
+def build(ads, reports, meta_to, amz_to, event=None):
     first = min((d for a in ads.values() for d in a["daily"]), default=meta_to)
     weeks = []
     w0 = monday(first)
@@ -221,11 +310,7 @@ def build(ads, reports, meta_to, amz_to):
         weeks.append(w0)
         w0 += dt.timedelta(days=7)
 
-    rep = {}
-    head = reports[0] if reports else REPORT_COLS
-    for r in reports[1:]:
-        if r and day(r[0]):
-            rep[day(r[0])] = {h: (r[i] if i < len(r) else "") for i, h in enumerate(head)}
+    rep = parse_reports(reports)
 
     index = []
     prev_k = None
@@ -294,6 +379,7 @@ def build(ads, reports, meta_to, amz_to):
 
         r = rep.get(s, {})
         out = {
+            "report": report_of(r),
             "start": s, "end": e, "partial": partial, "metaTo": meta_to, "amzTo": amz_to, "amzCoverage": amz_cov,
             "kpi": K, "prev": prev_k, "products": products,
             "winners": [card(a, k, amz_ok) for a, k in winners],
@@ -302,11 +388,6 @@ def build(ads, reports, meta_to, amz_to):
                           "spend": round(sum(v[0] for d, v in a["daily"].items() if s <= d <= e), 2)}
                          for a in sorted(uploaded, key=lambda a: a["name"])],
             "tagStats": tag_stats, "starved": starved, "minSpend": MIN_SPEND,
-            "report": {
-                "summary": r.get("한 줄 요약", ""), "good": split_lines(r.get("잘된 공통점")),
-                "bad": split_lines(r.get("안된 공통점")), "guide": split_lines(r.get("다음 주 제작 가이드")),
-                "landing": split_lines(r.get("랜딩 제안")), "author": r.get("작성", ""), "status": r.get("상태", ""),
-            },
         }
         (DATA / f"week-{s}.json").write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         index.append({"start": s, "end": e, "partial": partial, "hasReport": bool(out["report"]["summary"])})
@@ -315,7 +396,7 @@ def build(ads, reports, meta_to, amz_to):
 
     kst = dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=9)
     (DATA / "index.json").write_text(json.dumps({
-        "weeks": index[::-1], "metaTo": meta_to, "amzTo": amz_to, "builtAt": kst.strftime("%Y-%m-%d %H:%M"),
+        "weeks": index[::-1], "event": event, "metaTo": meta_to, "amzTo": amz_to, "builtAt": kst.strftime("%Y-%m-%d %H:%M"),
     }, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
@@ -353,7 +434,8 @@ def main():
     amz_to = day(board[4][1]) if len(board) > 4 and len(board[4]) > 1 else ""
     amz_to = amz_to or max((d for a in ads.values() for d in a["amz"]), default="")
     DATA.mkdir(parents=True, exist_ok=True)
-    build(ads, reports, meta_to, amz_to)
+    event = build_event(ads, reports, meta_to, amz_to)
+    build(ads, reports, meta_to, amz_to, event)
 
 
 if __name__ == "__main__":
