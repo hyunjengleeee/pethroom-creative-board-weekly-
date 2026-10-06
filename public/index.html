@@ -119,6 +119,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const usd = v => v == null ? "–" : "$" + (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2));
 const usd0 = v => v == null ? "–" : "$" + Math.round(v).toLocaleString("en-US");
 const pct = v => v == null ? "–" : Math.round(v * 100) + "%";
+const pct1 = v => v == null ? "–" : (v * 100).toFixed(1) + "%";
 const md = s => s ? `${+s.slice(5, 7)}/${+s.slice(8, 10)}` : "";
 const PROD = {EFC: "콤", PSS: "샴푸"};
 const cache = {};
@@ -213,8 +214,12 @@ function bindTags() {
 
 /* ───────── 행사 ───────── */
 function cmpTable(p) {
-  const pre = p.key === "pre", E = p.event, B = p.base;
-  const rows = pre
+  const pre = p.key === "pre", E = p.event, B = p.base, wait = p.amzCoverage === "none";
+  const cpc = k => k.clicks ? usd(k.spend / k.clicks) : "–";
+  const rows = !pre && wait
+    ? [["광고비", usd0(E.spend), usd0(B.spend)], ["클릭", E.clicks.toLocaleString(), B.clicks.toLocaleString()], ["CPC", cpc(E), cpc(B)],
+       ["클릭률", pct1(E.ctr), pct1(B.ctr)], ["주문·ROAS", "아마존 대기", "아마존 대기"]]
+    : pre
     ? [["광고비", usd0(E.spend), usd0(B.spend)], ["리드", E.leads.toLocaleString(), B.leads.toLocaleString()], ["CPL", usd(E.cpl), usd(B.cpl)],
        ["리드 전환율", pct(E.lpvRate), pct(B.lpvRate)], ["장바구니", E.atc, B.atc], ["장바구니율", pct(E.atcRate), pct(B.atcRate)]]
     : [["광고비", usd0(E.spend), usd0(B.spend)], ["클릭", E.clicks.toLocaleString(), B.clicks.toLocaleString()], ["장바구니", E.atc, B.atc],
@@ -231,11 +236,15 @@ async function renderEvent() {
     const head = `<h2>${p.label} <span class="muted" style="font-weight:500">${md(p.from)}~${md(p.to)} · ${esc(p.sub)}</span></h2>`;
     if (!p.started || !p.event.spend) return `<div class="card">${head}<div class="wait">${md(p.from)}부터 집계 — 데이터가 들어오면 자동으로 채워져요.</div></div>`;
     const pre = p.key === "pre";
-    const metric = w => pre ? `<b>리드 ${w.leads}</b>CPL ${usd(w.cpl)} · 장바구니 ${w.atc}` : `<b>주문 ${w.orders}</b>${usd0(w.spend)} · 장바구니 ${w.atc}`;
+    const wait = p.amzCoverage === "none";
+    const metric = w => pre ? `<b>리드 ${w.leads}</b>CPL ${usd(w.cpl)} · 장바구니 ${w.atc}`
+      : wait ? `<b>클릭 ${w.clicks}</b>클릭률 ${pct1(w.ctr)} · ${usd0(w.spend)}`
+      : `<b>주문 ${w.orders}</b>${usd0(w.spend)} · 장바구니 ${w.atc}`;
     return `<div class="card">${head}
-      ${p.amzCoverage !== "full" ? `<div class="note" style="margin:0 0 10px">아마존 ${md(D.amzTo)}까지만 반영됐어요.</div>` : ""}
+      ${p.amzCoverage === "none" ? `<div class="note" style="margin:0 0 10px">아마존 데이터 전(${md(D.amzTo)}까지) — 주문·ROAS는 들어오면 반영돼요. 지금은 클릭 기준.</div>`
+        : p.amzCoverage !== "full" ? `<div class="note" style="margin:0 0 10px">아마존 ${md(D.amzTo)}까지만 반영됐어요.</div>` : ""}
       ${cmpTable(p)}
-      <h2 style="margin-top:16px">${pre ? "리드 많이 모은 행사 소재" : "주문 많은 행사 소재"}</h2>
+      <h2 style="margin-top:16px">${pre ? "리드 많이 모은 행사 소재" : p.amzCoverage === "none" ? "클릭 많은 행사 소재" : "주문 많은 행사 소재"}</h2>
       ${p.creatives.map(c => adRow(c, metric)).join("")}
       ${p.more ? `<div class="muted" style="margin-top:6px">외 ${p.more}개</div>` : ""}
     </div>`;

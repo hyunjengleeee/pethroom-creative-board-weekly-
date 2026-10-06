@@ -8,6 +8,7 @@
 """
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -73,7 +74,10 @@ def product_of(name, campaign=""):
 
 
 def slug(name):
-    return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower() or "ad"
+    s = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower()
+    if not s or re.search(r"[^\x00-\x7f]", name):  # 한글 이름은 겹치지 않게 해시를 붙임
+        s = (s + "_" if s else "ad_") + hashlib.md5(name.encode("utf-8")).hexdigest()[:8]
+    return s
 
 
 def monday(d):
