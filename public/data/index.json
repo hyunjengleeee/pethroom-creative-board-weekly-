@@ -1,0 +1,31 @@
+{
+ "weeks": [
+  {
+   "start": "2026-10-05",
+   "end": "2026-10-11",
+   "partial": true,
+   "hasReport": false
+  },
+  {
+   "start": "2026-09-28",
+   "end": "2026-10-04",
+   "partial": false,
+   "hasReport": true
+  },
+  {
+   "start": "2026-09-21",
+   "end": "2026-09-27",
+   "partial": false,
+   "hasReport": false
+  },
+  {
+   "start": "2026-09-14",
+   "end": "2026-09-20",
+   "partial": false,
+   "hasReport": false
+  }
+ ],
+ "metaTo": "2026-10-05",
+ "amzTo": "2026-10-04",
+ "builtAt": "2026-10-06 11:53"
+}

@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>페스룸 주간 소재 리포트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f5f2; --card:#ffffff; --ink:#1d1d1f; --sub:#6b6b70; --line:#e7e5e0; --soft:#f1efea;
+  --good:#1f8a4c; --good-bg:#e8f5ec; --bad:#c2410c; --bad-bg:#fdeee6; --warn:#a16207; --warn-bg:#fdf6e3;
+  --accent:#2f4bd8; --accent-bg:#eef1fd; --pink:#d6337f; --blue:#1e40af;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141416; --card:#1d1d20; --ink:#ededee; --sub:#a1a1a8; --line:#2c2c31; --soft:#25252a;
+    --good:#4ade80; --good-bg:#16291e; --bad:#fb923c; --bad-bg:#2e1d12; --warn:#facc15; --warn-bg:#2b2610;
+    --accent:#8ea2ff; --accent-bg:#1f2440; --pink:#f472b6; --blue:#93c5fd;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141416; --card:#1d1d20; --ink:#ededee; --sub:#a1a1a8; --line:#2c2c31; --soft:#25252a;
+  --good:#4ade80; --good-bg:#16291e; --bad:#fb923c; --bad-bg:#2e1d12; --warn:#facc15; --warn-bg:#2b2610;
+  --accent:#8ea2ff; --accent-bg:#1f2440; --pink:#f472b6; --blue:#93c5fd;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.02em}
+h2{font-size:16px;font-weight:800;margin:0 0 12px;letter-spacing:-.01em}
+.muted{color:var(--sub);font-size:13px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.weeks{display:flex;gap:6px;flex-wrap:wrap}
+.weeks button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.weeks button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.summary{font-size:17px;font-weight:500;line-height:1.65}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:middle}
+.b-draft{background:var(--warn-bg);color:var(--warn)}
+.b-ok{background:var(--good-bg);color:var(--good)}
+.note{font-size:12.5px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:6px 10px;margin-top:10px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .l{font-size:12px;color:var(--sub)}
+.kpi .v{font-size:20px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12px;font-variant-numeric:tabular-nums}
+.up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--sub)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+ul.pts{margin:0;padding-left:18px} ul.pts li{margin:6px 0}
+.good h2{color:var(--good)} .bad h2{color:var(--bad)}
+.guide{background:var(--accent-bg);border-color:transparent}
+.guide h2{color:var(--accent)}
+.guide ol{margin:0;padding-left:20px} .guide li{margin:7px 0;font-weight:500}
+.ad{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.ad:first-of-type{border-top:0}
+.ad img,.ad .ph{width:64px;height:64px;border-radius:8px;object-fit:cover;background:var(--soft);cursor:zoom-in;display:block}
+.ad .nm{font-weight:700;font-size:14px;word-break:break-all}
+.ad .cp{font-size:13px;color:var(--sub);font-style:italic;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--soft);color:var(--sub);white-space:nowrap}
+.chip.p-EFC{color:var(--blue)} .chip.p-PSS{color:var(--pink)}
+.ad .m{text-align:right;font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ad .m b{display:block;font-size:16px;color:var(--ink)}
+.rank{font-weight:800;color:var(--sub);margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{font-weight:500;color:var(--sub);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button{border:0;background:var(--soft);color:var(--sub);border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.bar{height:6px;border-radius:3px;background:var(--soft);position:relative;min-width:60px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--good)}
+.bar i.lo{background:var(--bad)}
+.strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.strip figure{margin:0;width:72px}
+.strip img,.strip .ph{width:72px;height:72px;border-radius:6px;object-fit:cover;background:var(--soft);cursor:zoom-in;display:block}
+.strip figcaption{font-size:10px;color:var(--sub);line-height:1.3;margin-top:2px;word-break:break-all}
+details summary{cursor:pointer;font-weight:700}
+.empty{color:var(--sub);font-size:14px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+.lb.on{display:flex} .lb img{max-width:min(520px,100%);max-height:90vh;border-radius:10px}
+.scroll{overflow-x:auto}
+@media (max-width:760px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .ad{grid-template-columns:56px 1fr}
+  .ad img,.ad .ph{width:56px;height:56px}
+  .ad .m{grid-column:2;text-align:left}
+  .ad .m b{display:inline;margin-right:6px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>페스룸 주간 소재 리포트</h1>
+      <div class="muted" id="meta">불러오는 중…</div>
+    </div>
+    <div class="weeks" id="weeks"></div>
+  </div>
+  <div id="app"></div>
+</div>
+<div class="lb" id="lb"><img alt=""></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const usd = v => v == null ? "–" : "$" + (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : v.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+const usd0 = v => v == null ? "–" : "$" + Math.round(v).toLocaleString("en-US");
+const pct = v => v == null ? "–" : Math.round(v * 100) + "%";
+const md = s => { const [, m, d] = s.split("-"); return `${+m}/${+d}`; };
+const PROD = {EFC: "콤", PSS: "샴푸"};
+
+let INDEX, WEEK, TAGDIM = "문구 각도";
+
+function delta(cur, prev, kind, lowerBetter) {
+  if (cur == null || prev == null || !prev) return '<span class="flat">전주 –</span>';
+  let txt, diff;
+  if (kind === "pct") { diff = cur - prev; txt = (diff >= 0 ? "+" : "") + Math.round(diff * 100) + "%p"; }
+  else { diff = (cur - prev) / prev; txt = (diff >= 0 ? "+" : "") + Math.round(diff * 100) + "%"; }
+  const good = lowerBetter ? diff < 0 : diff > 0;
+  return `<span class="${Math.abs(diff) < 0.005 ? "flat" : good ? "up" : "down"}">전주 ${txt}</span>`;
+}
+
+function thumb(c, cls = "") {
+  return c.thumb ? `<img src="${esc(c.thumb)}" alt="${esc(c.name)}" loading="lazy" data-zoom>` : `<div class="ph"></div>`;
+}
+
+function adRow(c, i, kind) {
+  const w = c.week;
+  const chips = [`<span class="chip p-${c.product}">${PROD[c.product] || c.product}</span>`]
+    .concat([c.angle, c.format, c.model].filter(x => x && x !== "미분류").map(x => `<span class="chip">${esc(x)}</span>`));
+  const main = WEEK.amzCoverage === "none"
+    ? `<b>CPL ${usd(w.cpl)}</b>지출 ${usd0(w.spend)} · 리드 ${w.leads}`
+    : `<b>ROAS ${pct(w.roas)}</b>지출 ${usd0(w.spend)} · 주문 ${w.orders} · CPL ${usd(w.cpl)}`;
+  return `<div class="ad">${thumb(c)}
+    <div><div class="nm">${kind === "win" ? `<span class="rank">${i + 1}</span>` : ""}${esc(c.name)}</div>
+      ${c.copy ? `<div class="cp">“${esc(c.copy)}”</div>` : ""}
+      <div class="chips">${chips.join("")}</div></div>
+    <div class="m">${main}</div></div>`;
+}
+
+function tagTable() {
+  const rows = (WEEK.tagStats[TAGDIM] || []);
+  if (!rows.length) return `<div class="empty">태그된 소재가 아직 없어요.</div>`;
+  const max = Math.max(1.5, ...rows.map(r => r.roas || 0));
+  return `<div class="scroll"><table>
+    <tr><th>제품</th><th>${esc(TAGDIM)}</th><th>소재</th><th>지출</th><th>주문</th><th>ROAS</th><th></th><th>CPL</th><th>ATC율</th></tr>
+    ${rows.map(r => `<tr><td><span class="chip p-${r.product}">${PROD[r.product] || r.product}</span></td><td>${esc(r.value)}</td>
+      <td>${r.n}</td><td>${usd0(r.spend)}</td><td>${r.orders}</td><td><b>${pct(r.roas)}</b></td>
+      <td><div class="bar"><i class="${(r.roas || 0) < 0.5 ? "lo" : ""}" style="width:${Math.min(100, (r.roas || 0) / max * 100)}%"></i></div></td>
+      <td>${usd(r.cpl)}</td><td>${pct(r.atcRate)}</td></tr>`).join("")}
+  </table></div>
+  <div class="muted" style="margin-top:8px">시작부터 이 주 끝까지 누적 · 지출 $${WEEK.minSpend} 이상 쓴 소재만 (메타가 예산을 거의 안 준 소재 ${WEEK.starved}개는 제외)</div>`;
+}
+
+function render() {
+  const W = WEEK, K = W.kpi, P = W.prev || {}, R = W.report;
+  const amzNote = W.amzCoverage === "none" ? `아마존 데이터가 아직 이 주에 없어요 (${md(W.amzTo)}까지). 위너는 CPL 기준으로 임시 선정했어요.`
+    : W.amzCoverage === "partial" ? `아마존 데이터가 ${md(W.amzTo)}까지만 들어왔어요. 매출·ROAS는 더 늘어날 수 있어요.` : "";
+  $("#meta").textContent = `${md(W.start)} ~ ${md(W.end)}${W.partial ? " (진행 중)" : ""} · 메타 ${md(W.metaTo)}까지 · 아마존 ${md(W.amzTo)}까지 · ${INDEX.builtAt} 생성`;
+
+  const kp = [
+    ["업로드", `${K.uploads}개`, `<span class="flat">집행 ${K.launched}개 · 운영 ${K.active}개</span>`],
+    ["광고비", usd0(K.spend), delta(K.spend, P.spend)],
+    ["ROAS", pct(K.roas), delta(K.roas, P.roas, "pct")],
+    ["주문 · 매출", `${K.orders}건`, `<span class="flat">${usd0(K.sales)}</span>`],
+    ["CPL", usd(K.cpl), delta(K.cpl, P.cpl, "", true)],
+    ["장바구니율", pct(K.atcRate), delta(K.atcRate, P.atcRate, "pct")],
+  ];
+
+  $("#app").innerHTML = `
+  <div class="card">
+    ${R.summary ? `<div class="summary">${esc(R.summary)}</div>
+      <div class="muted" style="margin-top:6px"><span class="badge ${R.status === "확정" ? "b-ok" : "b-draft"}">${esc(R.status || "초안")}</span> ${esc(R.author)}</div>`
+      : `<div class="empty">이 주의 분석 글이 아직 없어요. 숫자와 위닝 소재는 자동으로 계산돼요.</div>`}
+    ${amzNote ? `<div class="note">${amzNote}</div>` : ""}
+  </div>
+
+  <div class="kpis">${kp.map(([l, v, d]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("")}</div>
+  <div style="height:14px"></div>
+
+  <div class="card">
+    <h2>🏆 이번 주 위닝 소재</h2>
+    ${W.winners.length ? W.winners.map((c, i) => adRow(c, i, "win")).join("") : `<div class="empty">기준(지출 $${W.minSpend}+, ROAS 50%+, 주문 2건+)을 넘은 소재가 없어요.</div>`}
+  </div>
+
+  ${R.good.length || R.bad.length ? `<div class="grid2">
+    <div class="card good"><h2>✅ 잘된 소재의 공통점</h2><ul class="pts">${R.good.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    <div class="card bad"><h2>❌ 안된 소재의 공통점</h2><ul class="pts">${R.bad.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+  </div>` : ""}
+
+  ${R.guide.length ? `<div class="card guide"><h2>✍️ 다음 주 제작 가이드</h2><ol>${R.guide.map(x => `<li>${esc(x)}</li>`).join("")}</ol></div>` : ""}
+  ${R.landing.length ? `<div class="card"><h2>🧭 랜딩 제안</h2><ul class="pts">${R.landing.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+
+  ${W.losers.length ? `<div class="card"><h2>📉 이번 주 부진 소재</h2>${W.losers.map((c, i) => adRow(c, i, "lose")).join("")}</div>` : ""}
+
+  <div class="card">
+    <h2>📊 소재 특징별 성과</h2>
+    <div class="tabs">${Object.keys(W.tagStats).map(k => `<button data-dim="${esc(k)}" aria-pressed="${k === TAGDIM}">${esc(k)}</button>`).join("")}</div>
+    <div id="tagt">${tagTable()}</div>
+  </div>
+
+  <div class="card">
+    <h2>제품별</h2>
+    <div class="scroll"><table>
+      <tr><th>제품</th><th></th><th>광고비</th><th>CPL</th><th>장바구니율</th><th>주문</th><th>매출</th><th>ROAS</th></tr>
+      ${W.products.map(p => `<tr><td><span class="chip p-${p.key}">${PROD[p.key] || p.key}</span></td><td>${esc(p.label)}</td><td>${usd0(p.spend)}</td><td>${usd(p.cpl)}</td><td>${pct(p.atcRate)}</td><td>${p.orders}</td><td>${usd0(p.sales)}</td><td><b>${pct(p.roas)}</b></td></tr>`).join("")}
+    </table></div>
+  </div>
+
+  <div class="card">
+    <details><summary>이번 주 업로드된 소재 ${W.uploaded.length}개</summary>
+      <div class="strip">${W.uploaded.map(c => `<figure>${thumb(c)}<figcaption>${esc(c.name)}${c.spend ? ` · ${usd0(c.spend)}` : " · 미집행"}</figcaption></figure>`).join("") || `<div class="empty">없음</div>`}</div>
+    </details>
+  </div>
+
+  <div class="muted">위닝 = 이 주 지출 $${W.minSpend} 이상 · ROAS 50% 이상 · 주문 2건 이상, 매출 순. 부진 = 지출 $${W.minSpend} 이상 · ROAS 25% 미만.
+  매출은 아마존 어트리뷰션(클릭일 기준 14일). 분석 글과 소재 태그는 시트 '주간리포트' · '소재태그' 탭에서 고칠 수 있어요.</div>`;
+
+  document.querySelectorAll("[data-dim]").forEach(b => b.onclick = () => { TAGDIM = b.dataset.dim; render(); });
+}
+
+async function openWeek(start) {
+  WEEK = await (await fetch(`data/week-${start}.json`, {cache: "no-cache"})).json();
+  document.querySelectorAll("#weeks button").forEach(b => b.setAttribute("aria-pressed", b.dataset.w === start));
+  history.replaceState(null, "", "#" + start);
+  render();
+}
+
+(async () => {
+  try {
+    INDEX = await (await fetch("data/index.json", {cache: "no-cache"})).json();
+  } catch { $("#meta").textContent = "데이터를 불러오지 못했어요."; return; }
+  $("#weeks").innerHTML = INDEX.weeks.map(w => `<button data-w="${w.start}">${md(w.start)}~${md(w.end)}${w.partial ? " ·진행 중" : ""}</button>`).join("");
+  document.querySelectorAll("#weeks button").forEach(b => b.onclick = () => openWeek(b.dataset.w));
+  const want = location.hash.slice(1);
+  const pick = INDEX.weeks.find(w => w.start === want) || INDEX.weeks.find(w => w.hasReport) || INDEX.weeks.find(w => !w.partial) || INDEX.weeks[0];
+  openWeek(pick.start);
+})();
+
+document.addEventListener("click", e => {
+  const img = e.target.closest("[data-zoom]");
+  if (img) { $("#lb img").src = img.src; $("#lb").classList.add("on"); }
+  else if (e.target.closest("#lb")) $("#lb").classList.remove("on");
+});
+</script>
+</body>
+</html>
