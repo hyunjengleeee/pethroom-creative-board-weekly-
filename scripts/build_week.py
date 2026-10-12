@@ -25,8 +25,10 @@ sys.stdout.reconfigure(encoding="utf-8")
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "data"
 THUMBS = ROOT / "public" / "thumbs"
-KEY_PATH = os.environ.get("PETHROOM_GSA_KEY") or str(
-    Path.home() / "Downloads" / "pethroom google hub json 키" / "valid-broker-510106-b2-d54daeab26b6.json")
+_KEY_FILE = Path("pethroom google hub json 키") / "valid-broker-510106-b2-d54daeab26b6.json"
+KEY_PATH = os.environ.get("PETHROOM_GSA_KEY") or next(
+    (str(p) for p in (Path.home() / d / _KEY_FILE for d in ("Desktop", "Downloads", "Documents")) if p.exists()),
+    str(Path.home() / "Desktop" / _KEY_FILE))
 SHEET_ID = "1oYsssIMz-rT8IpNLscMHel_gbUt3I82QJYjHBa-uygs"
 
 MIN_SPEND = 20      # 이 이상 쓴 소재만 '제대로 집행'으로 보고 공통점 집계에 넣음
